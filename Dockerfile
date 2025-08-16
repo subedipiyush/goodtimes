@@ -13,9 +13,15 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 
+# Set NLTK_DATA environment variable to a writable path inside the container
+ENV NLTK_DATA=/usr/local/share/nltk_data
+
+# Create the NLTK data directory if it doesn't exist
+RUN mkdir -p ${NLTK_DATA}
+
 # Download NLTK VADER lexicon
 # This is crucial for the SentimentAnalyzer to work
-RUN python -m nltk.downloader vader_lexicon
+RUN python -m nltk.downloader -d ${NLTK_DATA} vader_lexicon
 
 WORKDIR /app
 COPY . /app
