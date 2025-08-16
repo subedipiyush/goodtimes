@@ -13,6 +13,10 @@ ENV PYTHONUNBUFFERED=1
 COPY requirements.txt .
 RUN python -m pip install -r requirements.txt
 
+# Download NLTK VADER lexicon
+# This is crucial for the SentimentAnalyzer to work
+RUN python -c "import nltk; nltk.download('vader_lexicon')"
+
 WORKDIR /app
 COPY . /app
 
