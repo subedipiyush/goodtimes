@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Good Times</title>
+    <!-- Tailwind CSS CDN for easy styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align items to the start to allow scrolling */
+            min-height: 100vh;
+            padding: 2rem; /* Add padding around the main container */
+        }
+        .container {
+            max-width: 900px; /* Increased max-width for better content display */
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2.5rem; /* Increased padding */
+            margin-top: 2rem; /* Margin from top */
+        }
+        .news-card {
+            background-color: #f9fafb;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease-in-out;
+        }
+        .news-card:hover {
+            transform: translateY(-5px);
+        }
+        .news-card a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .news-card a:hover {
+            text-decoration: underline;
+        }
+        .loading-spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #2563eb;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                margin-top: 1rem;
+            }
+            body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-4xl font-bold text-center text-gray-800 mb-6">Good Times ✨</h1>
+        <p class="text-center text-gray-600 mb-8">Your personalized dose of positive news!</p>
+
+        <div class="mb-8 p-6 bg-blue-50 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold text-blue-800 mb-4">How it Works (Phase I Demo):</h2>
+            <ul class="list-disc list-inside text-blue-700 space-y-2">
+                <li>This demo fetches news from **The Himalayan Times RSS feeds** via a **local backend server**.</li>
+                <li>The backend now uses a more advanced **VADER sentiment analysis model** to filter for positive news.</li>
+                <li>Only positive headlines will be displayed below.</li>
+                <li><strong>IMPORTANT: You must run the Python backend server (app.py) locally for this to work!</strong></li>
+            </ul>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <button id="generateNewsBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
+                Generate Good News!
+            </button>
+            <div id="loadingIndicator" class="hidden flex items-center space-x-2 text-gray-600">
+                <div class="loading-spinner"></div>
+                <span>Curating happiness...</span>
+            </div>
+        </div>
+
+        <div id="newsOutput" class="space-y-4">
+            <!-- Positive news articles will be displayed here -->
+        </div>
+
+        <div id="messageBox" class="hidden fixed bottom-5 right-5 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg" style="min-width: 200px;">
+            <p id="messageText"></p>
+        </div>
+    </div>
+
+    <script>
+        // Utility function to display messages
+        function showMessage(text, type = 'success') {
+            const messageBox = document.getElementById('messageBox');
+            const messageText = document.getElementById('messageText');
+            messageText.textContent = text;
+            messageBox.className = `fixed bottom-5 right-5 px-4 py-3 rounded-lg shadow-lg transition-all duration-300 ease-in-out ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+            messageBox.classList.remove('hidden');
+            setTimeout(() => {
+                messageBox.classList.add('hidden');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        // Function to display news (no longer performs sentiment analysis here)
+        function displayNews(articles) {
+            const newsOutputDiv = document.getElementById('newsOutput');
+            newsOutputDiv.innerHTML = ''; // Clear previous news
+
+            if (articles.length === 0) {
+                newsOutputDiv.innerHTML = `<p class="text-center text-gray-500">No good news found today. Try again later!</p>`;
+                return;
+            }
+
+            articles.forEach(article => {
+                const articleCard = document.createElement('div');
+                articleCard.className = 'news-card';
+                articleCard.innerHTML = `
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">${article.title}</h3>
+                    <p class="text-gray-700 mb-3">${article.content.substring(0, 150)}...</p>
+                    <a href="${article.url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:underline">Read more &rarr;</a>
+                `;
+                newsOutputDiv.appendChild(articleCard);
+            });
+        }
+
+        // Event listener for the button
+        document.getElementById('generateNewsBtn').addEventListener('click', async () => {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const generateNewsBtn = document.getElementById('generateNewsBtn');
+            const newsOutputDiv = document.getElementById('newsOutput');
+            const backendUrl = 'http://127.0.0.1:5000/scrape-news'; // URL of your Python backend
+
+            // Show loading, disable button
+            loadingIndicator.classList.remove('hidden');
+            generateNewsBtn.disabled = true;
+            generateNewsBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            newsOutputDiv.innerHTML = ''; // Clear previous results
+
+            try {
+                const response = await fetch(backendUrl);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const positiveArticles = await response.json(); // Backend now returns only positive articles
+
+                if (positiveArticles.error) {
+                    throw new Error(positiveArticles.error + (positiveArticles.details ? `: ${positiveArticles.details}` : ''));
+                }
+
+                displayNews(positiveArticles); // Display directly as they are already filtered
+                showMessage('Good news curated successfully!');
+
+            } catch (error) {
+                console.error("Failed to fetch news:", error);
+                newsOutputDiv.innerHTML = `
+                    <p class="text-center text-red-500">
+                        Error fetching news: ${error.message}. <br>
+                        Please ensure the Python backend server is running at <code>${backendUrl}</code>
+                        and check your browser's console for more details.
+                    </p>
+                `;
+                showMessage('Failed to curate news!', 'error');
+            } finally {
+                // Hide loading, enable button
+                loadingIndicator.classList.add('hidden');
+                generateNewsBtn.disabled = false;
+                generateNewsBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        });
+
+        // Initialize display with a welcome message or empty state
+        window.onload = () => {
+            document.getElementById('newsOutput').innerHTML = `<p class="text-center text-gray-500">Click "Generate Good News!" to fetch today's positive headlines.</p>`;
+        };
+
+    </script>
+</body>
+</html>
