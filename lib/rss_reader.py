@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import time
+from datetime import datetime
 
 def fetch_rss_articles(rss_urls, max_retries=3, retry_delay=1):
     """
@@ -13,12 +14,12 @@ def fetch_rss_articles(rss_urls, max_retries=3, retry_delay=1):
 
     Returns:
         list: A list of dictionaries, where each dictionary represents an article
-              with 'title', 'url', and 'content'.
+              with 'title', 'url', 'content', and 'pub_date' (as string).
         dict: An error dictionary if fetching fails for all URLs after retries.
     """
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'application/xml, text/xml, */*; q=0.01',
+        'Accept': 'application/xml, text/xml, */*; q=0.01', # Accept XML for RSS feeds
         'Accept-Language': 'en-US,en;q=0.5',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
@@ -31,27 +32,26 @@ def fetch_rss_articles(rss_urls, max_retries=3, retry_delay=1):
                 response = requests.get(url, headers=headers, timeout=10)
                 response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
 
-                # Parse as XML, explicitly using 'lxml-xml'
                 soup = BeautifulSoup(response.text, 'lxml-xml')
-
-                # Find all <item> tags which represent individual news articles in RSS
                 items = soup.find_all('item')
 
                 for item in items:
                     title_tag = item.find('title')
                     link_tag = item.find('link')
                     description_tag = item.find('description')
+                    pub_date_tag = item.find('pubDate') # Extract pubDate
 
                     title = title_tag.get_text(strip=True) if title_tag else "No Title"
                     link = link_tag.get_text(strip=True) if link_tag else "#"
-                    # Clean up description, as it might contain HTML entities or tags
                     description = BeautifulSoup(description_tag.get_text(strip=True), 'html.parser').get_text(strip=True) if description_tag else ""
+                    pub_date = pub_date_tag.get_text(strip=True) if pub_date_tag else None # Get pubDate as string
 
                     if title and link and link != "#":
                         all_articles.append({
                             "title": title,
                             "url": link,
-                            "content": description if description else title
+                            "content": description if description else title,
+                            "pub_date": pub_date
                         })
                 
                 if items: # If articles were found for this URL, no need to retry this URL
@@ -93,7 +93,6 @@ def fetch_rss_articles(rss_urls, max_retries=3, retry_delay=1):
                 else:
                     return {"error": "Failed to parse RSS feed content due to an unexpected error.", "details": error_message, "status_code": 500}
     
-    # If no articles were found across all URLs after all retries
     if not all_articles:
         return {"error": "No articles could be retrieved from the RSS feeds. Check the RSS URLs or your network connection.", "details": "The RSS feeds might be empty or inaccessible.", "status_code": 500}
 
