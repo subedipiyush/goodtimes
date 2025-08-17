@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta
+# src/news_curator.py
+
+from datetime import datetime, timedelta, timezone # Import timezone
 
 class NewsCurator:
     def __init__(self):
@@ -70,41 +72,45 @@ class NewsCurator:
     def filter_by_frequency(self, articles, frequency='daily'):
         """
         Filters news articles based on the specified frequency.
-        Assumes article has a 'pub_date' field (datetime object).
+        Assumes article has a 'pub_date' field (string).
         """
         if not articles:
             return []
 
-        now = datetime.now()
+        # Get current time in UTC and make it timezone-aware
+        now = datetime.now(timezone.utc)
         filtered_articles = []
 
         for article in articles:
-            # RSS feeds usually have a 'pubDate' string. Ensure rss_reader converts it.
-            # For now, we'll assume the article object passed here has a datetime object.
-            # If not, you'd need to parse it here from article['pub_date_str'] or similar.
-            
-            # For this example, let's assume article['pub_date'] is already a datetime object.
-            # If your rss_reader only extracts a string, you'll need to parse it here.
-            # Example parsing (if pub_date is a string like "Mon, 15 Aug 2025 10:00:00 +0000"):
+            pub_date_str = article.get('pub_date')
+            if not pub_date_str:
+                continue # Skip article if pub_date is missing
+
             try:
-                # Common RSS date formats, adjust as needed.
-                # Example: 'Thu, 15 Aug 2025 08:00:00 +0000'
-                pub_date = datetime.strptime(article['pub_date'], '%a, %d %b %Y %H:%M:%S %z')
-            except (ValueError, KeyError):
-                # Fallback if pub_date is not present or not in expected format
-                # print(f"Warning: Could not parse pub_date for article: {article.get('title', 'N/A')}")
+                # Parse the publication date string into a timezone-aware datetime object
+                # Common RSS date format: 'Thu, 15 Aug 2025 08:00:00 +0000'
+                # Ensure it's converted to UTC for consistent comparison
+                pub_date = datetime.strptime(pub_date_str, '%a, %d %b %Y %H:%M:%S %z').astimezone(timezone.utc)
+            except ValueError:
+                # Handle cases where the date format might vary or be invalid
+                # You might log this or try other common formats
+                # print(f"Warning: Could not parse pub_date '{pub_date_str}' for article: {article.get('title', 'N/A')}")
                 continue # Skip article if date cannot be parsed
 
+            # Calculate timedelta based on frequency
+            time_difference = now - pub_date
+
             if frequency == 'daily':
-                if now - pub_date <= timedelta(days=1):
+                if time_difference <= timedelta(days=1):
                     filtered_articles.append(article)
             elif frequency == 'weekly':
-                if now - pub_date <= timedelta(weeks=1):
+                if time_difference <= timedelta(weeks=1):
                     filtered_articles.append(article)
             elif frequency == 'monthly':
-                if now - pub_date <= timedelta(days=30): # Approximate for month
+                # Approximate for a month (30 days)
+                if time_difference <= timedelta(days=30):
                     filtered_articles.append(article)
-            else: # Default or 'all' if frequency is not recognized
+            else: # Default case or 'all' frequency
                 filtered_articles.append(article)
         
         return filtered_articles

@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from lib.rss_reader import fetch_rss_articles
 from lib.sentiment_analyzer import SentimentAnalyzer
-from lib.tts_converter import TTSConverter
+from lib.speech_synthesizer import TTSConverter
 from lib.news_curator import NewsCurator # New import
 
 # Initialize Flask app

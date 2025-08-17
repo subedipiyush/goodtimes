@@ -1,3 +1,5 @@
+'use client';
+
 export class AudioPlayer {
     constructor() {
         this.audioElement = new Audio();

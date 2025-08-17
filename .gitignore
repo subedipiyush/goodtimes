@@ -5,3 +5,7 @@ __pycache__/
 
 # IDEs
 .vscode/
+
+# Node js
+node_modules/
+.next/
