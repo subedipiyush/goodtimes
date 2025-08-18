@@ -54,7 +54,7 @@ steps:
   id: 'Push Frontend Image'
   args:
     - 'push'
-    - 'gcr.io/$PROJECT_ID/goodtimes:$COMMIT_SHA'
+    - 'gcr.io/$PROJECT_ID/goodtimes-frontend:$COMMIT_SHA'
 
 - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
   id: 'Deploy Frontend to Cloud Run'
