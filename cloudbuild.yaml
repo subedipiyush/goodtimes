@@ -31,7 +31,7 @@ steps:
     - '--image'
     - 'gcr.io/$PROJECT_ID/goodtimes-backend:$COMMIT_SHA'
     - '--region'
-    - 'global' # Ensure this matches your desired backend region
+    - 'europe-west1' # Ensure this matches your desired backend region
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
@@ -66,7 +66,7 @@ steps:
     - '--image'
     - 'gcr.io/$PROJECT_ID/goodtimes-frontend:$COMMIT_SHA'
     - '--region'
-    - 'global' # Ensure this matches your desired frontend region
+    - 'europe-west1' # Ensure this matches your desired frontend region
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
