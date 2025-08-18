@@ -62,7 +62,7 @@ steps:
     - 'gcloud'
     - 'run'
     - 'deploy'
-    - 'goodtimes-frontend' # Your Cloud Run service name for the frontend
+    - 'goodtimes' # Your Cloud Run service name for the frontend
     - '--image'
     - 'gcr.io/$PROJECT_ID/goodtimes-frontend:$COMMIT_SHA'
     - '--region'
@@ -70,9 +70,7 @@ steps:
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
-  # Set environment variables for the frontend during its deployment
-  env:
-    - 'NEXT_PUBLIC_BACKEND_BASE_URL=https://goodtimes-369046995463.europe-west1.run.app'
+    - '--set-env-vars=NEXT_PUBLIC_BACKEND_BASE_URL=https://goodtimes-backend-369046995463.europe-west1.run.app'
 
 images:
   - 'gcr.io/$PROJECT_ID/goodtimes-backend:$COMMIT_SHA'
