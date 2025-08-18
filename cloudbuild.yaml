@@ -49,6 +49,9 @@ steps:
     - './ui' # Build context is the frontend directory
     - '-f' # Specify Dockerfile location within the build context
     - './ui/Dockerfile' # Path to your frontend Dockerfile
+    # Pass the backend URL as a build-arg to the Dockerfile
+    - '--build-arg'
+    - 'NEXT_PUBLIC_BACKEND_BASE_URL=${_BACKEND_URL}' # Use a Cloud Build substitution variable
 
 - name: 'gcr.io/cloud-builders/docker'
   id: 'Push Frontend Image'
@@ -70,7 +73,6 @@ steps:
     - '--platform'
     - 'managed'
     - '--allow-unauthenticated'
-    - '--set-env-vars=NEXT_PUBLIC_BACKEND_BASE_URL=https://goodtimes-backend-369046995463.europe-west1.run.app'
 
 images:
   - 'gcr.io/$PROJECT_ID/goodtimes-backend:$COMMIT_SHA'

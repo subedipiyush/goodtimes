@@ -4,6 +4,8 @@ FROM node:18-alpine AS builder
 # Set working directory
 WORKDIR /app
 
+ARG NEXT_PUBLIC_BACKEND_BASE_URL
+
 # Copy package.json and install dependencies
 COPY package.json yarn.lock* package-lock.json* ./
 RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile; else npm install --frozen-lockfile; fi
@@ -13,7 +15,7 @@ COPY . .
 
 # Build the Next.js application
 # This command generates the optimized build artifacts in the .next directory
-RUN npm run build
+RUN NEXT_PUBLIC_BACKEND_BASE_URL=$NEXT_PUBLIC_BACKEND_BASE_URL npm run build
 
 # --- Production Stage ---
 FROM node:18-alpine
