@@ -1,7 +1,6 @@
 export class APIClient {
     constructor(backendBaseUrl) {
-        this.newsApiEndpoint = `${backendBaseUrl}/get-news`;
-        this.readArticleApiEndpoint = `${backendBaseUrl}/read-article`;
+        this.baseURL = backendBaseUrl;
     }
 
     /**
@@ -11,7 +10,8 @@ export class APIClient {
      * @throws {Error} - Throws an error if the fetch fails or the backend returns an error.
      */
     async fetchNews(preferences) {
-        const response = await fetch(this.newsApiEndpoint, {
+        const endpoint = `${this.baseURL}/get-news`;
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -34,7 +34,8 @@ export class APIClient {
      * @throws {Error} - Throws an error if the fetch fails or the backend returns an error.
      */
     async readArticle(text) {
-        const response = await fetch(this.readArticleApiEndpoint, {
+        const endpoint = `${this.baseURL}/read-article`;
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -56,9 +57,9 @@ export class APIClient {
      * @param {string} frequency - The frequency of news updates ('daily', 'weekly', 'monthly').
     */
     async subscribeToNews(email, frequency) {
-        const url = `${this.baseURL}/subscribe`;
+        const endpoint = `${this.baseURL}/subscribe`;
         try {
-            const response = await fetch(url, {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
