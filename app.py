@@ -1,18 +1,29 @@
+import os
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from lib.rss_reader import fetch_rss_articles
 from lib.sentiment_analyzer import SentimentAnalyzer
 from lib.speech_synthesizer import TTSConverter
-from lib.news_curator import NewsCurator # New import
+from lib.news_curator import NewsCurator
+from lib.firestore import InitializeDB
 
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app) # Enable CORS for all routes
 
+# --- Firebase Initialization ---
+# This expects a service account key file path from an environment variable
+# In Cloud Run, you might use Secret Manager or directly attach the default service account roles.
+# For local development, ensure 'FIREBASE_SERVICE_ACCOUNT_KEY_PATH' points to your .json key.
+# Alternatively, you can embed the JSON directly as an environment variable if it's small and secure.
+FIREBASE_SERVICE_ACCOUNT_KEY_PATH = os.environ.get('FIREBASE_SERVICE_ACCOUNT_KEY_PATH')
+db = InitializeDB(FIREBASE_SERVICE_ACCOUNT_KEY_PATH)
+
 # Initialize modules
 analyzer = SentimentAnalyzer()
 tts_converter = TTSConverter()
-news_curator = NewsCurator() # New instance
+news_curator = NewsCurator()
 
 @app.route('/get-news', methods=['POST']) # Changed to POST to receive preferences
 def get_news():
@@ -93,6 +104,48 @@ def read_article():
     else:
         return jsonify({"error": "Failed to convert text to speech."}), 500
 
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    if not db:
+        return jsonify({"error": "Firestore not initialized. Subscription not available."}), 500
+
+    data = request.json
+    email = data.get('email')
+    frequency = data.get('frequency') # 'daily', 'weekly', 'monthly'
+
+    if not email or not frequency:
+        return jsonify({"error": "Email and frequency are required."}), 400
+
+    # Basic email validation (more robust regex or library in production)
+    if "@" not in email or "." not in email:
+        return jsonify({"error": "Invalid email format."}), 400
+
+    try:
+        # Check if already subscribed
+        subscription_ref = db.collection('subscriptions').document(email)
+        existing_sub = subscription_ref.get()
+
+        if existing_sub.exists:
+            # Update existing subscription
+            subscription_ref.update({
+                'frequency': frequency,
+                'last_updated': firestore.SERVER_TIMESTAMP # Use server timestamp
+            })
+            return jsonify({"message": "Subscription updated successfully!"})
+        else:
+            # Create new subscription
+            subscription_ref.set({
+                'email': email,
+                'frequency': frequency,
+                'last_sent': None, # Timestamp of last email sent
+                'created_at': firestore.SERVER_TIMESTAMP,
+                'last_updated': firestore.SERVER_TIMESTAMP
+            })
+            return jsonify({"message": "Subscribed successfully! You'll receive news updates based on your chosen frequency."})
+
+    except Exception as e:
+        print(f"Error handling subscription for {email}: {e}")
+        return jsonify({"error": "Failed to process subscription."}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-

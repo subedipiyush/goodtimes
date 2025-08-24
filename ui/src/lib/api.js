@@ -49,4 +49,31 @@ export class APIClient {
         const data = await response.json();
         return data;
     }
+
+    /**
+     * Calls the backend to subscribe to news updates.
+     * @param {string} email - The email address to subscribe.
+     * @param {string} frequency - The frequency of news updates ('daily', 'weekly', 'monthly').
+    */
+    async subscribeToNews(email, frequency) {
+        const url = `${this.baseURL}/subscribe`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, frequency })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        } catch (error) {
+            console.error("APIClient.subscribeToNews error:", error);
+            throw error;
+        }
+    }
 }

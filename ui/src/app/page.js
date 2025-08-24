@@ -1,15 +1,11 @@
-'use client'; // This directive makes this component a Client Component in Next.js
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import PreferencesForm from '../components/PreferencesForm';
-import NewsDisplay from '../components/NewsDisplay';
-import { APIClient } from '../lib/api';
-import { AudioPlayer } from '../components/AudioPlayer';
+import PreferencesForm from '@/components/PreferencesForm';
+import NewsDisplay from '@/components/NewsDisplay';
+import { APIClient } from '@/lib/api';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
-// IMPORTANT: Update this with your deployed backend URL.
-// For Next.js, it's common to use environment variables for this.
-// Create a .env.local file in frontend-nextjs/ and add:
-// NEXT_PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:5000
 const BACKEND_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_BASE_URL || 'http://127.0.0.1:5000';
 
 export default function HomePage() {
@@ -19,19 +15,19 @@ export default function HomePage() {
   const [currentPlayingHeadlineButton, setCurrentPlayingHeadlineButton] = useState(null);
   const [currentPlayingArticleButton, setCurrentPlayingArticleButton] = useState(null);
 
-  // Use useRef to hold the AudioPlayer instance so it persists across renders
-  // and is only initialized on the client side.
-  const audioPlayerRef = useRef(null);
+  // New state for subscription form
+  const [subscriptionEmail, setSubscriptionEmail] = useState('');
+  const [subscriptionFrequency, setSubscriptionFrequency] = useState('daily');
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [subscriptionMessage, setSubscriptionMessage] = useState(null); // For success/error messages
 
-  // Initialize APIClient outside useEffect as it doesn't depend on browser APIs
+  const audioPlayerRef = useRef(null);
   const apiClient = new APIClient(BACKEND_BASE_URL);
 
   useEffect(() => {
-    // This code only runs on the client side after the component mounts
     if (audioPlayerRef.current === null) {
       audioPlayerRef.current = new AudioPlayer();
 
-      // Attach event listeners to the audio element once it's initialized
       audioPlayerRef.current.audioElement.onended = () => {
         setCurrentPlayingHeadlineButton(null);
         setCurrentPlayingArticleButton(null);
@@ -43,13 +39,13 @@ export default function HomePage() {
         setError('Failed to play audio.');
       };
     }
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   const handleGetNews = async (preferences) => {
     setLoading(true);
     setError(null);
     setNews([]);
-    if (audioPlayerRef.current) audioPlayerRef.current.stopAudio(); // Ensure player exists before stopping
+    if (audioPlayerRef.current) audioPlayerRef.current.stopAudio();
 
     try {
       const fetchedNews = await apiClient.fetchNews(preferences);
@@ -64,8 +60,8 @@ export default function HomePage() {
 
   const handleReadAloudArticle = async (articleContent, buttonElement) => {
     if (!audioPlayerRef.current) {
-      setError("Audio player not ready. Please try again.");
-      return;
+        setError("Audio player not ready. Please try again.");
+        return;
     }
     audioPlayerRef.current.stopAudio();
     setCurrentPlayingHeadlineButton(null);
@@ -83,19 +79,19 @@ export default function HomePage() {
 
   const handleReadAllHeadlines = async () => {
     if (!audioPlayerRef.current) {
-      setError("Audio player not ready. Please try again.");
-      return;
+        setError("Audio player not ready. Please try again.");
+        return;
     }
     audioPlayerRef.current.stopAudio();
     setCurrentPlayingArticleButton(null);
-
+    
     const headlines = news.map(article => article.title);
     if (headlines.length === 0) {
       setError("No headlines to read!");
       return;
     }
     const combinedHeadlines = "Here are the top headlines: " + headlines.join(". ") + ".";
-
+    
     const readAllButton = document.getElementById('readAllHeadlinesBtn');
     if (readAllButton) setCurrentPlayingHeadlineButton(readAllButton);
 
@@ -109,9 +105,28 @@ export default function HomePage() {
     }
   };
 
+  // New function to handle subscription
+  const handleSubscribe = async (e) => {
+    e.preventDefault();
+    setIsSubscribing(true);
+    setSubscriptionMessage(null);
+
+    try {
+      const result = await apiClient.subscribeToNews(subscriptionEmail, subscriptionFrequency);
+      setSubscriptionMessage({ type: 'success', text: result.message });
+      setSubscriptionEmail(''); // Clear email field on success
+    } catch (err) {
+      console.error("Error subscribing:", err);
+      setSubscriptionMessage({ type: 'error', text: err.message || "Failed to subscribe. Please try again." });
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
+
   return (
-    <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-8 md:p-10 flex flex-col gap-8">
-      <h1 className="text-5xl font-extrabold text-center text-gray-900 mb-6 tracking-tight leading-tight">
+    <div className="w-full max-w-2xl bg-white rounded-3xl shadow-xl p-8 md:p-10 flex flex-col gap-8">      
+      {/* "Good Times" heading styled to mimic The New York Times masthead */}
+      <h1 className="text-6xl font-serif font-extrabold text-center text-gray-900 leading-none mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
         Good Times ✨
       </h1>
       <p className="text-lg text-center text-gray-600 mb-8 max-w-xl mx-auto">
@@ -152,6 +167,57 @@ export default function HomePage() {
           Select your preferences and click "Get Good News!" to see today's positive headlines.
         </p>
       )}
+
+      {/* New Subscription Section */}
+      <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 sm:p-8 rounded-2xl shadow-lg border border-purple-200 mt-8">
+        <h2 className="text-2xl font-semibold text-purple-800 mb-5">Subscribe to Good News!</h2>
+        <form onSubmit={handleSubscribe} className="flex flex-col gap-4">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <input
+              type="email"
+              id="email"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm p-2"
+              placeholder="you@example.com"
+              value={subscriptionEmail}
+              onChange={(e) => setSubscriptionEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="frequency" className="block text-sm font-medium text-gray-700 mb-1">Email Frequency</label>
+            <select
+              id="frequency"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm p-2"
+              value={subscriptionFrequency}
+              onChange={(e) => setSubscriptionFrequency(e.target.value)}
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubscribing}
+          >
+            {isSubscribing ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-2"></div>
+                Subscribing...
+              </>
+            ) : (
+              'Subscribe'
+            )}
+          </button>
+        </form>
+        {subscriptionMessage && (
+          <div className={`mt-4 p-3 rounded-md ${subscriptionMessage.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+            {subscriptionMessage.text}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
